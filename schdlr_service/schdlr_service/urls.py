@@ -25,8 +25,8 @@ urlpatterns = [
     url(r'^admin/', admin.site.urls),
     
     # Django REST Browsable API auth interface
-    url(r'^api/' + API_VERSION + '/api-auth/', include('rest_framework.urls', namespace='rest_framework'))
+    url(r'^api/' + API_VERSION + '/api-auth/', include('rest_framework.urls', namespace='rest_framework')),
     # Django REST Token Endpoint
-    url(r'^api/' + API_VERSION + '/token', rest_auth_views.obtain_auth_token)
+    url(r'^api/' + API_VERSION + '/token', rest_auth_views.obtain_auth_token),
     
 ]
