@@ -1,7 +1,3 @@
-django
-djangorestframework
-markdown
-django-filter
-celery
-django-celery
-redis
+tornado
+apscheduler
+requests

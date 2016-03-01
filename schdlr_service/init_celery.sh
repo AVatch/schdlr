@@ -1,1 +1,0 @@
-celery -A schdlr_service worker -l info
