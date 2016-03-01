@@ -29,4 +29,7 @@ urlpatterns = [
     # Django REST Token Endpoint
     url(r'^api/' + API_VERSION + '/token', rest_auth_views.obtain_auth_token),
     
+    # Missions
+    url(r'^api/' + API_VERSION + '/', include('missions.urls', namespace='schdlr_missions')),
+    
 ]
