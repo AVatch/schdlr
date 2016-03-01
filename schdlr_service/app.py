@@ -2,7 +2,10 @@
 """
 import os
 import json
+import time
 from datetime import datetime
+from datetime import timedelta
+
 
 import tornado.ioloop
 import tornado.web
@@ -29,7 +32,20 @@ def job_post(url, headers=None, body=None):
     requests.post(url, headers=headers, body=body)
 
 
+# Utility functions
+date_handler = lambda obj: (
+    obj.isoformat()
+    if isinstance(obj, datetime.datetime)
+    or isinstance(obj, datetime.date)
+    else None
+)
+
+def convert_isodate_to_dateobj(iso_str):
+    return datetime(*time.strptime(iso_str[:-5], "%Y-%m-%dT%H:%M:%S")[:6])
+
 # Serializers
+def serialize_time(time):
+    pass
 
 
 # Validators
@@ -54,7 +70,10 @@ class JobsCtrl(tornado.web.RequestHandler):
     def get(self):
         """ """
         response = {}
+        print "*"*50
+        print str(datetime.now())
         print "Got it mr GET"
+        print "*"*50
         
         # scheduler.add_job(lambda: tick("applesauce"), 'interval', seconds=5)
         
@@ -68,9 +87,12 @@ class JobsCtrl(tornado.web.RequestHandler):
         
         if validator_action_trigger(request) and validator_action(request) and validator_trigger(request):
             
-            if request['trigger'] == 'date':
+            if 'date' in request['trigger']:
                 # Create a date job
                 print "Creating a date job"
+                
+                # request['trigger']['date']['time'] = convert_isodate_to_dateobj(request['trigger']['date']['time'])
+                request['trigger']['date']['time'] = datetime.now() + timedelta(seconds=5)
                 
                 if request['action']['type'].lower() == 'http':
                     kind = request['action'].get('kind')
@@ -80,29 +102,41 @@ class JobsCtrl(tornado.web.RequestHandler):
                     body = request['action'].get('body', None)
                     
                     if kind.lower() == 'get':
-                        job = scheduler.add_job(lambda: job_get(url=url, headers=headers, params=params), 'date', rundate=request['action']['time'])
+                        job = scheduler.add_job(lambda: job_get(url=url, headers=headers, params=params), 'date', run_date=request['trigger']['date']['time'])
+                        response['reason'] = 'Job created'
+                        response['job_id'] = job.id
+                        self.set_status(201)
+                        self.write( json.dumps(response) )
+                        
+                        
                     elif kind.lower() == 'post':
-                        job = scheduler.add_job(lambda: job_get(url=url, headers=headers, body=body), 'date', rundate=request['action']['time'])
+                        job = scheduler.add_job(lambda: job_get(url=url, headers=headers, body=body), 'date', run_date=request['trigger']['date']['time'])
+
                     
                     else:
                         response['reason'] = 'HTTP action of kind ' + kind + ' is not supported.'
                         self.set_status(400)
                         self.write( json.dumps(response) )
+
                 
                 else:
                     response['reason'] =  request['action']['type'] + ' action is not supported.'
                     self.set_status(400)
                     self.write( json.dumps(response) )
-                
-            elif request['trigger'] == 'interval':
+
+
+            elif 'interval' in request['trigger']:
                 # Create an interval job
                 pass
-            elif request['trigger'] == 'cron':
+            elif 'cron' in request['trigger']:
                 # Create a cron job
                 pass
-            response['reason'] = request['trigger'] + ' trigger is not supported.'
-            self.set_status(400)
-            self.write( json.dumps(response) )
+            else:
+                response['reason'] = 'Trigger is not supported.'
+                self.set_status(400)
+                self.write( json.dumps(response) )
+
+
         else:
             response['reason'] = "Improperly configured request body."
             self.set_status(400)
