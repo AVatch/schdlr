@@ -43,7 +43,9 @@ THIRD_PARTY_APPS = [
     'rest_framework'
 ]
 
-APPS = []
+APPS = [
+    'missions'
+]
 
 INSTALLED_APPS = CORE_APPS + THIRD_PARTY_APPS + APPS
 
