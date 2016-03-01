@@ -1,0 +1,35 @@
+[
+    {
+        "action": {
+            "type": "HTTP",
+            "url": "https://53b29e19.ngrok.com/tasks",
+            "kind": "GET"
+        },
+        "trigger": {
+            "interval": {
+                "start_date": null,
+                "end_date": null,
+                "weeks": 0,
+                "days": 0,
+                "hours": 0,
+                "minutes": 0,
+                "seconds": 0,
+                "timezone": null
+            }
+            
+        }
+    },
+    
+    {
+        "action": {
+            "type": "HTTP",
+            "url": "https://53b29e19.ngrok.com/tasks",
+            "kind": "GET"
+        },
+        "trigger": {
+            "date": {
+                "time": null
+            }
+        }
+    }
+]
