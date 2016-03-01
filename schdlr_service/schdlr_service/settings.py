@@ -41,7 +41,8 @@ CORE_APPS = [
 
 THIRD_PARTY_APPS = [
     'rest_framework',
-    'rest_framework.authtoken'
+    'rest_framework.authtoken',
+    'djcelery'
 ]
 
 APPS = [
@@ -91,6 +92,10 @@ DATABASES = {
         'NAME': os.path.join(BASE_DIR, 'db.sqlite3'),
     }
 }
+
+# Celery Configuration
+CELERY_RESULT_BACKEND='djcelery.backends.database:DatabaseBackend'
+CELERY_RESULT_BACKEND='djcelery.backends.cache:CacheBackend'
 
 
 # Password validation

@@ -3,4 +3,5 @@ djangorestframework
 markdown
 django-filter
 celery
+django-celery
 redis
