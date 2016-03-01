@@ -1,0 +1,5 @@
+env/
+*.pem
+connect.sh
+*.sqlite
+*.pyc
