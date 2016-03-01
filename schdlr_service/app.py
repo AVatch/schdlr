@@ -111,7 +111,10 @@ class JobsCtrl(tornado.web.RequestHandler):
                         
                     elif kind.lower() == 'post':
                         job = scheduler.add_job(lambda: job_get(url=url, headers=headers, body=body), 'date', run_date=request['trigger']['date']['time'])
-
+                        response['reason'] = 'Job created'
+                        response['job_id'] = job.id
+                        self.set_status(201)
+                        self.write( json.dumps(response) )
                     
                     else:
                         response['reason'] = 'HTTP action of kind ' + kind + ' is not supported.'
