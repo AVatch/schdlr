@@ -111,8 +111,9 @@ class JobsCtrl(tornado.web.RequestHandler):
                     body = request['action'].get('body', None)
                     
                     if kind.lower() == 'get':
+                        # should generate an explicit job id here and pass it as a kwarg
+                        # so that the job can then update the DB store with the appropriate response
                         job = scheduler.add_job(job_get, 'date', run_date=request['trigger']['date']['time'], kwargs={'url': url, 'headers': headers, 'params': params})
-                        # job = scheduler.add_job(lambda: job_get(url=url, headers=headers, params=params), 'date', run_date=request['trigger']['date']['time'])
                         response['reason'] = 'Job created'
                         response['job_id'] = job.id
                         self.set_status(201)
