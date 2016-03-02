@@ -24,11 +24,21 @@
         "action": {
             "type": "HTTP",
             "url": "https://53b29e19.ngrok.com/tasks",
-            "kind": "GET"
+            "kind": "GET", // or POST
+            "headers": { // optional
+                "key" : "val"
+            },
+            "params": { // for GET
+                "key" : "val"
+            },
+            "body": { // for POST
+                "key" : "val"
+            }
+            
         },
         "trigger": {
             "date": {
-                "time": null
+                "time": "2016-03-02T11:56:43.675875" // isoformat
             }
         }
     }

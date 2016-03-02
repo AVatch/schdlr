@@ -155,10 +155,6 @@ class JobsCtrl(tornado.web.RequestHandler):
             self.set_status(400)
             self.write( json.dumps(response) )
         
-        
-        
-        
-        
 
 routes = [
     (r'/jobs', JobsCtrl),
