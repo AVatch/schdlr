@@ -14,10 +14,19 @@ import apscheduler.schedulers.tornado
 from apscheduler.jobstores.sqlalchemy import SQLAlchemyJobStore
 from apscheduler.executors.pool import ThreadPoolExecutor, ProcessPoolExecutor
 
+from sqlalchemy import create_engine
+
 import requests
 
+from schemas import Job
 
+# Configure tornado
 PORT = 8888
+
+# Configure DB
+engine = create_engine('sqlite:///jobs.sqlite', echo=False)
+
+# Configure APScheduler
 JOBSTORES = {
     'default': SQLAlchemyJobStore(url='sqlite:///jobs.sqlite')
 }
@@ -32,7 +41,7 @@ JOB_DEFAULTS = {
 scheduler = apscheduler.schedulers.tornado.TornadoScheduler(jobstores=JOBSTORES)
 
 def tick(x):
-    print( 'Tick tock Mr %s, the time is %s' % (x, datetime.now() ) ) 
+    print( 'Tick tock Mr %s, the time is %s' % (x, datetime.now() ) )
 
 
 # Jobs
@@ -94,22 +103,22 @@ class JobsCtrl(tornado.web.RequestHandler):
         """ """
         response = {}
         request = json.loads( self.request.body )
-        
+
         if validator_action_trigger(request) and validator_action(request) and validator_trigger(request):
-            
+
             if 'date' in request['trigger']:
                 # Create a date job
                 request['trigger']['date']['time'] = convert_isodate_to_dateobj(request['trigger']['date']['time'])
-                
+
                 print "Sending job at this time: " + str(request['trigger']['date']['time'])
-                
+
                 if request['action']['type'].lower() == 'http':
                     kind = request['action'].get('kind')
                     url = request['action'].get('url')
                     headers = request['action'].get('headers', None)
                     params = request['action'].get('params', None)
                     body = request['action'].get('body', None)
-                    
+
                     if kind.lower() == 'get':
                         # should generate an explicit job id here and pass it as a kwarg
                         # so that the job can then update the DB store with the appropriate response
@@ -118,21 +127,21 @@ class JobsCtrl(tornado.web.RequestHandler):
                         response['job_id'] = job.id
                         self.set_status(201)
                         self.write( json.dumps(response) )
-                        
-                        
+
+
                     elif kind.lower() == 'post':
                         job = scheduler.add_job(lambda: job_get(url=url, headers=headers, body=body), 'date', run_date=request['trigger']['date']['time'])
                         response['reason'] = 'Job created'
                         response['job_id'] = job.id
                         self.set_status(201)
                         self.write( json.dumps(response) )
-                    
+
                     else:
                         response['reason'] = 'HTTP action of kind ' + kind + ' is not supported.'
                         self.set_status(400)
                         self.write( json.dumps(response) )
 
-                
+
                 else:
                     response['reason'] =  request['action']['type'] + ' action is not supported.'
                     self.set_status(400)
@@ -155,7 +164,7 @@ class JobsCtrl(tornado.web.RequestHandler):
             response['reason'] = "Improperly configured request body."
             self.set_status(400)
             self.write( json.dumps(response) )
-        
+
 
 routes = [
     (r'/jobs', JobsCtrl),
