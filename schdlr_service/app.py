@@ -54,7 +54,7 @@ date_handler = lambda obj: (
 )
 
 def convert_isodate_to_dateobj(iso_str):
-    return datetime(*time.strptime(iso_str[:-5], "%Y-%m-%dT%H:%M:%S")[:6])
+    return datetime.strptime(iso_str, "%Y-%m-%dT%H:%M:%S.%f")
 
 # Serializers
 def serialize_time(time):
@@ -102,7 +102,9 @@ class JobsCtrl(tornado.web.RequestHandler):
                 print "Creating a date job"
                 
                 # request['trigger']['date']['time'] = convert_isodate_to_dateobj(request['trigger']['date']['time'])
-                request['trigger']['date']['time'] = datetime.now() + timedelta(seconds=5)
+                # request['trigger']['date']['time'] = datetime.now() + timedelta(seconds=5)
+                d = datetime.now() + timedelta(seconds=5)
+                request['trigger']['date']['time'] = convert_isodate_to_dateobj(d.isoformat())
                 
                 print "Sending job at this time: " + str(request['trigger']['date']['time'])
                 
