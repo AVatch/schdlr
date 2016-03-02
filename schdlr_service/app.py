@@ -99,12 +99,7 @@ class JobsCtrl(tornado.web.RequestHandler):
             
             if 'date' in request['trigger']:
                 # Create a date job
-                print "Creating a date job"
-                
-                # request['trigger']['date']['time'] = convert_isodate_to_dateobj(request['trigger']['date']['time'])
-                # request['trigger']['date']['time'] = datetime.now() + timedelta(seconds=5)
-                d = datetime.now() + timedelta(seconds=5)
-                request['trigger']['date']['time'] = convert_isodate_to_dateobj(d.isoformat())
+                request['trigger']['date']['time'] = convert_isodate_to_dateobj(request['trigger']['date']['time'])
                 
                 print "Sending job at this time: " + str(request['trigger']['date']['time'])
                 
