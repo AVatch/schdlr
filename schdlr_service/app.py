@@ -11,11 +11,24 @@ import tornado.ioloop
 import tornado.web
 
 import apscheduler.schedulers.tornado
+from apscheduler.jobstores.sqlalchemy import SQLAlchemyJobStore
+from apscheduler.executors.pool import ThreadPoolExecutor, ProcessPoolExecutor
 
 import requests
 
 
 PORT = 8888
+JOBSTORES = {
+    'default': SQLAlchemyJobStore(url='sqlite:///jobs.sqlite')
+}
+EXECUTORS = {
+    'default': ThreadPoolExecutor(20),
+    'processpool': ProcessPoolExecutor(5)
+}
+JOB_DEFAULTS = {
+    'coalesce': False,
+    'max_instances': 3
+}
 scheduler = apscheduler.schedulers.tornado.TornadoScheduler()
 
 def tick(x):
