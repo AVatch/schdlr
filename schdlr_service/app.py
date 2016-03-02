@@ -43,19 +43,15 @@ scheduler = apscheduler.schedulers.tornado.TornadoScheduler(jobstores=JOBSTORES)
 
 
 # Utility functions
-date_handler = lambda obj: (
-    obj.isoformat()
-    if isinstance(obj, datetime.datetime)
-    or isinstance(obj, datetime.date)
-    else None
-)
-
 def convert_isodate_to_dateobj(iso_str):
     return datetime.strptime(iso_str, "%Y-%m-%dT%H:%M:%S.%f")
 
-# Serializers
-def serialize_time(time):
-    pass
+
+class BaseHandler(tornado.web.RequestHandler):
+  @property
+  def db(self):
+    return self.application.db
+
 
 class JobsCtrl(tornado.web.RequestHandler):
     """ """
