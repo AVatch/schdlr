@@ -40,6 +40,7 @@
             "date": {
                 "time": "2016-03-02T11:56:43.675875" // isoformat
             }
-        }
+        },
+        "callback": "someurl" // send a GET to that url
     }
 ]

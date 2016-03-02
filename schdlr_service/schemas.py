@@ -3,6 +3,9 @@ from sqlalchemy.ext.declarative import declarative_base
 
 Base = declarative_base()
 
+def init_db(engine):
+    Base.metadata.create_all(bind=engine)
+
 class ArchivedJob(Base):
      __tablename__ = 'jobs'
 
@@ -12,6 +15,8 @@ class ArchivedJob(Base):
      response = Column(String)
      action = Column(String)
      trigger = Column(String)
+     
+     callback = Column(String)
      
      time_created = Column(DateTime)
      time_completed = Column(DateTime)
