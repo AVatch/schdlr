@@ -5,7 +5,7 @@ import json
 import time
 from datetime import datetime
 from datetime import timedelta
-
+from pytz import utc
 
 import tornado.ioloop
 import tornado.web
@@ -29,20 +29,20 @@ JOB_DEFAULTS = {
     'coalesce': False,
     'max_instances': 3
 }
-scheduler = apscheduler.schedulers.tornado.TornadoScheduler()
+scheduler = apscheduler.schedulers.tornado.TornadoScheduler(jobstores=JOBSTORES)
 
 def tick(x):
     print( 'Tick tock Mr %s, the time is %s' % (x, datetime.now() ) ) 
 
 
 # Jobs
-def job_get(url, headers=None, params=None):
+def job_get(**kwargs):
     """ """
-    requests.get(url, headers=headers, params=params)
+    requests.get( kwargs.get('url'), headers=kwargs.get('headers', None), params=kwargs.get('params', None) )
 
-def job_post(url, headers=None, body=None):
+def job_post(**kwargs):
     """ """
-    requests.post(url, headers=headers, body=body)
+    requests.post( kwargs.get('url'), headers=kwargs.get('headers', None), body=kwargs.get('body', None) )
 
 
 # Utility functions
@@ -84,12 +84,9 @@ class JobsCtrl(tornado.web.RequestHandler):
         """ """
         response = {}
         print "*"*50
-        print str(datetime.now())
-        print "Got it mr GET"
+        print str(datetime.now()) + " Got it mr GET"
         print "*"*50
-        
-        # scheduler.add_job(lambda: tick("applesauce"), 'interval', seconds=5)
-        
+
         self.set_status(200)
         self.write( json.dumps(response) )
 
@@ -107,6 +104,8 @@ class JobsCtrl(tornado.web.RequestHandler):
                 # request['trigger']['date']['time'] = convert_isodate_to_dateobj(request['trigger']['date']['time'])
                 request['trigger']['date']['time'] = datetime.now() + timedelta(seconds=5)
                 
+                print "Sending job at this time: " + str(request['trigger']['date']['time'])
+                
                 if request['action']['type'].lower() == 'http':
                     kind = request['action'].get('kind')
                     url = request['action'].get('url')
@@ -115,7 +114,8 @@ class JobsCtrl(tornado.web.RequestHandler):
                     body = request['action'].get('body', None)
                     
                     if kind.lower() == 'get':
-                        job = scheduler.add_job(lambda: job_get(url=url, headers=headers, params=params), 'date', run_date=request['trigger']['date']['time'])
+                        job = scheduler.add_job(job_get, 'date', run_date=request['trigger']['date']['time'], kwargs={'url': url, 'headers': headers, 'params': params})
+                        # job = scheduler.add_job(lambda: job_get(url=url, headers=headers, params=params), 'date', run_date=request['trigger']['date']['time'])
                         response['reason'] = 'Job created'
                         response['job_id'] = job.id
                         self.set_status(201)
