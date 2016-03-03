@@ -90,6 +90,8 @@ class BaseHandler(tornado.web.RequestHandler):
             if self.request.headers["Content-Type"].startswith("application/json"):
                 request = self.request.body or '{}'
                 self.json_args = json.loads( request )
+            else:
+                self.json_args = None
         else:
             self.json_args = None
 
