@@ -20,7 +20,7 @@ from apscheduler.executors.pool import ThreadPoolExecutor, ProcessPoolExecutor
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
-from schemas import ArchivedJob, init_db
+from models import ArchivedJob, init_db
 from jobs import job_get, job_post
 from serializers import validator_action_trigger, validator_action, validator_trigger 
 
