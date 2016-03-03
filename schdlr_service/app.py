@@ -20,6 +20,7 @@ from apscheduler.executors.pool import ThreadPoolExecutor, ProcessPoolExecutor
 from sqlalchemy import create_engine
 from sqlalchemy.orm import scoped_session, sessionmaker
 
+import requests
 
 import models
 from jobs import job_get, job_post
@@ -93,7 +94,7 @@ def create_http_date_job(request, scheduler=None, session=None):
                                     'url': request['action'].get('url'), 
                                     'headers': request['action'].get('headers', None), 
                                     'params': request['action'].get('params', None),
-                                    'body': request['action'].get('body', None),
+                                    'data': request['action'].get('data', None),
                                     'callback': request['action'].get('callback', None)
                                 })
         
@@ -189,7 +190,21 @@ class JobsHandler(BaseHandler):
             self.write( json.dumps(response) )
         else:
             self.set_status(400)
-
+    
+    def put(self):
+        """Updates a job""" 
+        job = self.db.query(models.ArchivedJob).filter_by( id=self.get_argument('job_id') ).first()
+        if job:
+            job.status = True
+            job.status_code = self.get_argument('status_code')
+            job.time_completed = datetime.now()
+            
+            self.db.commit()
+            
+            # if callback was provided, send a GET
+            if job.callback:
+                requests.get( job.callback )    
+    
 
 def main():
     """
