@@ -95,7 +95,7 @@ class BaseHandler(tornado.web.RequestHandler):
 
 
 class JobsHandler(BaseHandler):
-    """ """
+    """Main handler that deals with creating and retrieving jobs"""
     def get(self):
         """Retrieves a job given a job id"""
         response = {}
