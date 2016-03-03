@@ -88,7 +88,8 @@ class BaseHandler(tornado.web.RequestHandler):
     def prepare(self):
         if 'Content-Type' in self.request.headers:
             if self.request.headers["Content-Type"].startswith("application/json"):
-                self.json_args = json.loads( self.request.body )
+                request = self.request.body or '{}'
+                self.json_args = json.loads( request )
         else:
             self.json_args = None
 
@@ -100,12 +101,30 @@ class JobsHandler(BaseHandler):
         response = {}
         job_id = self.get_argument("id", default=None)
         
-        print "*"*50
-        print str(datetime.now()) + " Got it mr GET"
-        print "*"*50
-
-        self.set_status(200)
-        self.write( json.dumps(response) )
+        if job_id:
+            session = Session()
+            job = session.query(ArchivedJob).filter_by( id=job_id ).first()
+            
+            if job:
+                response['job_id'] = job_id
+                response['job'] = {
+                    'status': job.status,
+                    'response': job.response,
+                    'action': job.action,
+                    'trigger': job.trigger,
+                    'callback': job.callback,
+                    'time_created': job.time_created.isoformat(),
+                    'time_completed': job.time_completed.isoformat() if job.time_completed else None
+                }
+                
+                self.set_header('Content-Type', 'application/json') 
+                self.set_status(200)
+                self.write( json.dumps(response) )
+            else:
+                self.set_status(404)
+        else:
+            self.set_status(404)
+         
 
     def post(self):
         """Creates a job"""
@@ -128,10 +147,8 @@ routes = [
     tornado.web.url(r'/jobs', JobsHandler, name='jobs'),
 ]
 
-
 # Define the application
 application = tornado.web.Application(routes, debug=True)
-
 
 if __name__ == '__main__':
     print('Press Ctrl+{0} to exit'.format('Break' if os.name == 'nt' else 'C'))
