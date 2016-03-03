@@ -8,6 +8,9 @@ import string
 from datetime import datetime
 from datetime import timedelta
 
+from os.path import join, dirname
+from dotenv import load_dotenv
+
 import tornado.httpserver
 import tornado.ioloop
 import tornado.options
@@ -25,17 +28,21 @@ import requests
 import models
 from jobs import job_get, job_post
 from serializers import validator_action_trigger, validator_action, validator_trigger 
-from db import DB_PATH
+
+# Load the .env file
+dotenv_path = join(dirname(__file__), '.env')
+load_dotenv(dotenv_path)
+
 
 # Options
 tornado.options.define('port', default=8888, help='run on the given port', type=int)
 tornado.options.define('debug', default=True, type=bool)
-tornado.options.define('db_path', default=DB_PATH, type=str)
+tornado.options.define('db_path', default=os.environ.get('DB_PATH'), type=str)
 
 
 # Configure APScheduler
 JOBSTORES = {
-    'default': SQLAlchemyJobStore(url=DB_PATH)
+    'default': SQLAlchemyJobStore(url=os.environ.get('DB_PATH'))
 }
 EXECUTORS = {
     'default': ThreadPoolExecutor(20),
@@ -215,8 +222,7 @@ def main():
     tornado.ioloop.IOLoop.instance().start()
 
 if __name__ == '__main__':
-    print '[%s]: Serving on port %s' % ( str(datetime.now()), str(tornado.options.options.port) )
-    
+    print '[%s]: Serving on port %s' % ( str(datetime.now()), str(tornado.options.options.port) )    
     try:
         main()
     except( KeyboardInterrupt, SystemExit ):

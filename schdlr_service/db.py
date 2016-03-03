@@ -1,11 +1,12 @@
 """
 """
+import os
 from sqlalchemy import create_engine
 from sqlalchemy.orm import scoped_session, sessionmaker
 from sqlalchemy.ext.declarative import declarative_base
 
 
-DB_PATH = 'sqlite:///jobs.sqlite'
+DB_PATH = os.environ.get('DB_PATH')
 engine = create_engine(DB_PATH, convert_unicode=True, echo=False)
 db_session = scoped_session(sessionmaker(autocommit=False,
                                          autoflush=False,

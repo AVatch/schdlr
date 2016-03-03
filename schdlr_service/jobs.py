@@ -1,10 +1,11 @@
 """
 """
+import os
 import json
 from datetime import datetime
 import requests
 
-UPDATE_ENDPOINT = 'https://5379926d.ngrok.com/jobs'
+UPDATE_ENDPOINT = os.environ.get("JOB_UPDATE_PATH")
 
 def update_callback(url, data):
     requests.put( url, data=data )
