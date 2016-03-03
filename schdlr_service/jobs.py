@@ -36,7 +36,7 @@ def job_get(**kwargs):
 
 def job_post(**kwargs):
     """ """
-    requests.post( kwargs.get('url'), headers=kwargs.get('headers', None), body=kwargs.get('body', None) )
+    r = requests.post( kwargs.get('url'), headers=kwargs.get('headers', None), body=kwargs.get('body', None) )
     
     # update the archived job object
     session = Session()
