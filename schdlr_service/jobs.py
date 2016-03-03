@@ -3,7 +3,14 @@
 import os
 import json
 from datetime import datetime
+from os.path import join, dirname
+from dotenv import load_dotenv
+
 import requests
+
+# Load the .env file
+dotenv_path = join(dirname(__file__), '.env')
+load_dotenv(dotenv_path)
 
 UPDATE_ENDPOINT = os.environ.get("JOB_UPDATE_PATH")
 
