@@ -53,39 +53,24 @@ def generate_id(N=50):
     return ''.join(random.SystemRandom().choice(string.ascii_uppercase + string.digits) for _ in range(N))
 
 def create_http_date_job(request, session=None):
-    job_id = generate_id()
-    kind = request['action'].get('kind')
-    url = request['action'].get('url')
-    headers = request['action'].get('headers', None)
-    params = request['action'].get('params', None)
-    body = request['action'].get('body', None)
-    callback = request['action'].get('callback', None)
+    http_jobs = {
+        'get': job_get,
+        'post': job_post
+    }
+
+    job = scheduler.add_job(http_jobs[request['action'].get('kind').lower()],
+                            'date', 
+                            id=job_id,
+                            run_date=request['trigger']['date']['time'], 
+                            kwargs={
+                                'job_id': job_id,
+                                'url': request['action'].get('url'), 
+                                'headers': request['action'].get('headers', None), 
+                                'params': request['action'].get('params', None),
+                                'body': request['action'].get('body', None),
+                                'callback': request['action'].get('callback', None)
+                            })
     
-    if kind.lower() == 'get':
-        job = scheduler.add_job(job_get,
-                                'date', 
-                                id=job_id,
-                                run_date=request['trigger']['date']['time'], 
-                                kwargs={
-                                    'job_id': job_id,
-                                    'url': url, 
-                                    'headers': headers, 
-                                    'params': params,
-                                    'callback': callback
-                                })
-    
-    elif kind.lower() == 'post':
-        job = scheduler.add_job(job_post, 
-                                'date',
-                                id=job_id,
-                                run_date=request['trigger']['date']['time'], 
-                                kwargs={
-                                    'job_id': job_id,
-                                    'url': url, 
-                                    'headers': headers, 
-                                    'params': params,
-                                    'callback': callback
-                                })
 
     # Save the job in the db archives
     archived_job = ArchivedJob(id=job_id,
@@ -104,8 +89,9 @@ def create_http_date_job(request, session=None):
 
 class BaseHandler(tornado.web.RequestHandler):
     def prepare(self):
-        if self.request.headers["Content-Type"].startswith("application/json"):
-            self.json_args = json.loads( self.request.body )
+        if 'Content-Type' in self.request.headers:
+            if self.request.headers["Content-Type"].startswith("application/json"):
+                self.json_args = json.loads( self.request.body )
         else:
             self.json_args = None
 
