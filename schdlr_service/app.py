@@ -130,8 +130,10 @@ class JobsHandler(BaseHandler):
         """Creates a job"""
         response = {}
         # Validate the request
+        # TODO
         
         # Serialzie the request
+        # TODO
         self.json_args['trigger']['date']['time'] = convert_isodate_to_dateobj(self.json_args['trigger']['date']['time'])
         
         # Create the job
