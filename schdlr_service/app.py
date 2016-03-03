@@ -146,11 +146,13 @@ class JobsHandler(BaseHandler):
         
         # Create the job
         job_id = create_http_date_job( self.json_args, session=Session() )
-        response['reason'] = 'Job created'
-        response['job_id'] = job_id
-        self.set_status(201)
-        self.write( json.dumps(response) )
-
+        if job_id:
+            response['reason'] = 'Job created'
+            response['job_id'] = job_id
+            self.set_status(201)
+            self.write( json.dumps(response) )
+        else:
+            self.set_status(400)
 
 # Define the routes
 routes = [
