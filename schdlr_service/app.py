@@ -53,35 +53,41 @@ def create_http_date_job(request, session=None):
         'post': job_post
     }
     
-    job_id = generate_id()
+    try:
+        job_id = generate_id()
 
-    job = scheduler.add_job(http_jobs[request['action'].get('kind').lower()],
-                            'date', 
-                            id=job_id,
-                            run_date=request['trigger']['date']['time'], 
-                            kwargs={
-                                'job_id': job_id,
-                                'url': request['action'].get('url'), 
-                                'headers': request['action'].get('headers', None), 
-                                'params': request['action'].get('params', None),
-                                'body': request['action'].get('body', None),
-                                'callback': request['action'].get('callback', None)
-                            })
-    
+        job = scheduler.add_job(http_jobs[request['action'].get('kind').lower()],
+                                'date', 
+                                id=job_id,
+                                run_date=request['trigger']['date']['time'], 
+                                kwargs={
+                                    'job_id': job_id,
+                                    'url': request['action'].get('url'), 
+                                    'headers': request['action'].get('headers', None), 
+                                    'params': request['action'].get('params', None),
+                                    'body': request['action'].get('body', None),
+                                    'callback': request['action'].get('callback', None)
+                                })
+        
 
-    # Save the job in the db archives
-    archived_job = ArchivedJob(id=job_id,
-                               status=False,
-                               response='',
-                               action='http_' + request['action'].get('kind').lower(),
-                               trigger='date',
-                               callback=request['action'].get('callback', None),
-                               
-                               time_created = datetime.now())
-    session.add(archived_job)
-    session.commit()
+        # Save the job in the db archives
+        archived_job = ArchivedJob(id=job_id,
+                                status=False,
+                                response='',
+                                action='http_' + request['action'].get('kind').lower(),
+                                trigger='date',
+                                callback=request['action'].get('callback', None),
+                                
+                                time_created = datetime.now())
+        session.add(archived_job)
+        session.commit()
+        
+        return job_id
+    except Exception as e:
+        print "There was an error: " + str(e)
+        return None
     
-    return job_id
+    
 
 
 class BaseHandler(tornado.web.RequestHandler):
