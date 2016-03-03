@@ -76,9 +76,9 @@ def create_http_date_job(request, session=None):
     archived_job = ArchivedJob(id=job_id,
                                status=False,
                                response='',
-                               action='http_' + kind,
+                               action='http_' + request['action'].get('kind').lower(),
                                trigger='date',
-                               callback=callback,
+                               callback=request['action'].get('callback', None),
                                
                                time_created = datetime.now())
     session.add(archived_job)
