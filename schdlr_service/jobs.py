@@ -21,17 +21,18 @@ def job_get(**kwargs):
     # update the archived job object
     session = Session()
     job = session.query(ArchivedJob).filter_by( id=kwargs.get('job_id') ).first()
-    job.status = True
-    job.response = json.dumps({
-        'status_code': r.status_code,
-        'content': r.text
-    })
-    job.time_completed = datetime.now()
-    session.commit()
-    
-    # if callback was provided, send a GET
-    if job.callback:
-        http_callback(job.callback)    
+    if job:
+        job.status = True
+        job.response = json.dumps({
+            'status_code': r.status_code,
+            'content': r.text
+        })
+        job.time_completed = datetime.now()
+        session.commit()
+        
+        # if callback was provided, send a GET
+        if job.callback:
+            http_callback(job.callback)    
 
 def job_post(**kwargs):
     """ """
@@ -40,14 +41,15 @@ def job_post(**kwargs):
     # update the archived job object
     session = Session()
     job = session.query(ArchivedJob).filter_by( id=kwargs.get('job_id') ).first()
-    job.status = True
-    job.response = json.dumps({
-        'status_code': r.status_code,
-        'content': r.text
-    })
-    job.time_completed = datetime.now()
-    session.commit()
-    
-    # if callback was provided, send a GET
-    if job.callback:
-        http_callback(job.callback)
+    if job:
+        job.status = True
+        job.response = json.dumps({
+            'status_code': r.status_code,
+            'content': r.text
+        })
+        job.time_completed = datetime.now()
+        session.commit()
+        
+        # if callback was provided, send a GET
+        if job.callback:
+            http_callback(job.callback)
