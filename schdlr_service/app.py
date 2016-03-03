@@ -17,18 +17,13 @@ import apscheduler.schedulers.tornado
 from apscheduler.jobstores.sqlalchemy import SQLAlchemyJobStore
 from apscheduler.executors.pool import ThreadPoolExecutor, ProcessPoolExecutor
 
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
-
+from db import Session
 from models import ArchivedJob, init_db
 from jobs import job_get, job_post
 from serializers import validator_action_trigger, validator_action, validator_trigger 
 
 # Configure tornado
 PORT = 8888
-
-# Configure DB
-engine = create_engine('sqlite:///jobs.sqlite', echo=False)
 
 # Configure APScheduler
 JOBSTORES = {
@@ -57,6 +52,8 @@ def create_http_date_job(request, session=None):
         'get': job_get,
         'post': job_post
     }
+    
+    job_id = generate_id()
 
     job = scheduler.add_job(http_jobs[request['action'].get('kind').lower()],
                             'date', 
@@ -142,10 +139,7 @@ if __name__ == '__main__':
         # Start the scheduler
         scheduler.start()
         
-        # start the db
-        init_db(engine)
-        Session = sessionmaker(bind=engine)
-        
+        # Start the application
         application.listen(PORT)
         tornado.ioloop.IOLoop.instance().start()
     except( KeyboardInterrupt, SystemExit ):
