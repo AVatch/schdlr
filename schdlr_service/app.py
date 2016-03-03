@@ -17,17 +17,23 @@ import apscheduler.schedulers.tornado
 from apscheduler.jobstores.sqlalchemy import SQLAlchemyJobStore
 from apscheduler.executors.pool import ThreadPoolExecutor, ProcessPoolExecutor
 
-from db import get_session
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker
+
 from models import ArchivedJob, init_db
 from jobs import job_get, job_post
 from serializers import validator_action_trigger, validator_action, validator_trigger 
+from db import DB_PATH
 
 # Configure tornado
 PORT = 8888
 
+#Configure DB
+engine = create_engine(DB_PATH, echo=False)
+
 # Configure APScheduler
 JOBSTORES = {
-    'default': SQLAlchemyJobStore(url='sqlite:///jobs.sqlite')
+    'default': SQLAlchemyJobStore(url=DB_PATH)
 }
 EXECUTORS = {
     'default': ThreadPoolExecutor(20),
@@ -37,7 +43,15 @@ JOB_DEFAULTS = {
     'coalesce': False,
     'max_instances': 3
 }
+
+def my_listener(event):
+    if event.exception:
+        print('The job crashed :(')
+    else:
+        print('The job worked :)')
+
 scheduler = apscheduler.schedulers.tornado.TornadoScheduler(jobstores=JOBSTORES)
+# scheduler.add_listener(my_listener, EVENT_JOB_EXECUTED | EVENT_JOB_ERROR)
 
 
 # Utility functions
@@ -110,7 +124,7 @@ class JobsHandler(BaseHandler):
         job_id = self.get_argument("id", default=None)
         
         if job_id:
-            Session = get_session()
+            Session = sessionmaker(bind=engine)
             session = Session()
             job = session.query(ArchivedJob).filter_by( id=job_id ).first()
             
@@ -146,7 +160,7 @@ class JobsHandler(BaseHandler):
         self.json_args['trigger']['date']['time'] = convert_isodate_to_dateobj(self.json_args['trigger']['date']['time'])
         
         # Create the job
-        Session = get_session()
+        Session = sessionmaker(bind=engine)
         job_id = create_http_date_job( self.json_args, session=Session() )
         if job_id:
             response['reason'] = 'Job created'
