@@ -57,3 +57,10 @@ def job_post(**kwargs):
         # if callback was provided, send a GET
         if job.callback:
             http_callback(job.callback)
+
+
+def my_listener(event):
+    if event.exception:
+        print('The job crashed :(')
+    else:
+        print('The job worked :)')

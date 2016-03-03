@@ -7,10 +7,10 @@ import random
 import string
 from datetime import datetime
 from datetime import timedelta
-from pytz import utc
 
-import tornado.options
+import tornado.httpserver
 import tornado.ioloop
+import tornado.options
 import tornado.web
 
 import apscheduler.schedulers.tornado
@@ -18,18 +18,19 @@ from apscheduler.jobstores.sqlalchemy import SQLAlchemyJobStore
 from apscheduler.executors.pool import ThreadPoolExecutor, ProcessPoolExecutor
 
 from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy.orm import scoped_session, sessionmaker
 
-from models import ArchivedJob, init_db
+
+import models
 from jobs import job_get, job_post
 from serializers import validator_action_trigger, validator_action, validator_trigger 
 from db import DB_PATH
 
-# Configure tornado
-PORT = 8888
+# Options
+tornado.options.define('port', default=8888, help='run on the given port', type=int)
+tornado.options.define('debug', default=True, type=bool)
+tornado.options.define('db_path', default=DB_PATH, type=str)
 
-#Configure DB
-engine = create_engine(DB_PATH, echo=False)
 
 # Configure APScheduler
 JOBSTORES = {
@@ -44,14 +45,27 @@ JOB_DEFAULTS = {
     'max_instances': 3
 }
 
-def my_listener(event):
-    if event.exception:
-        print('The job crashed :(')
-    else:
-        print('The job worked :)')
 
-scheduler = apscheduler.schedulers.tornado.TornadoScheduler(jobstores=JOBSTORES)
-# scheduler.add_listener(my_listener, EVENT_JOB_EXECUTED | EVENT_JOB_ERROR)
+class Application(tornado.web.Application):
+    def __init__(self):
+        handlers = [
+            tornado.web.url(r'/jobs', JobsHandler, name='jobs'),
+        ]
+        settings = dict(
+            debug=tornado.options.options.debug
+        )
+        tornado.web.Application.__init__(self, handlers, **settings)
+        
+        # Configure the database
+        engine = create_engine(tornado.options.options.db_path, convert_unicode=True, echo=tornado.options.options.debug)
+        models.init_db(engine)
+        self.db = scoped_session(sessionmaker(bind=engine))
+
+        # Configure the scheduler
+        scheduler = apscheduler.schedulers.tornado.TornadoScheduler(jobstores=JOBSTORES)
+        # scheduler.add_listener(my_listener, EVENT_JOB_EXECUTED | EVENT_JOB_ERROR)
+        scheduler.start()
+        self.schdlr = scheduler
 
 
 # Utility functions
@@ -61,7 +75,7 @@ def convert_isodate_to_dateobj(iso_str):
 def generate_id(N=50):
     return ''.join(random.SystemRandom().choice(string.ascii_uppercase + string.digits) for _ in range(N))
 
-def create_http_date_job(request, session=None):
+def create_http_date_job(request, scheduler=None, session=None):
     http_jobs = {
         'get': job_get,
         'post': job_post
@@ -85,14 +99,14 @@ def create_http_date_job(request, session=None):
         
 
         # Save the job in the db archives
-        archived_job = ArchivedJob(id=job_id,
-                                status=False,
-                                response='',
-                                action='http_' + request['action'].get('kind').lower(),
-                                trigger='date',
-                                callback=request['action'].get('callback', None),
-                                
-                                time_created = datetime.now())
+        archived_job = models.ArchivedJob(id=job_id,
+                                          status=False,
+                                          response='',
+                                          action='http_' + request['action'].get('kind').lower(),
+                                          trigger='date',
+                                          callback=request['action'].get('callback', None),
+                                        
+                                          time_created = datetime.now())
         session.add(archived_job)
         session.commit()
         
@@ -106,6 +120,10 @@ def create_http_date_job(request, session=None):
 
 class BaseHandler(tornado.web.RequestHandler):
     def prepare(self):
+        # This service will always return application/json
+        self.set_header('Content-Type', 'application/json')
+        
+        # Load JSON data
         if 'Content-Type' in self.request.headers:
             if self.request.headers["Content-Type"].startswith("application/json"):
                 request = self.request.body or '{}'
@@ -114,6 +132,14 @@ class BaseHandler(tornado.web.RequestHandler):
                 self.json_args = None
         else:
             self.json_args = None
+    
+    @property
+    def db(self):
+        return self.application.db
+    
+    @property
+    def schdlr(self):
+        return self.application.schdlr
 
 
 class JobsHandler(BaseHandler):
@@ -124,9 +150,7 @@ class JobsHandler(BaseHandler):
         job_id = self.get_argument("id", default=None)
         
         if job_id:
-            Session = sessionmaker(bind=engine)
-            session = Session()
-            job = session.query(ArchivedJob).filter_by( id=job_id ).first()
+            job = self.db.query(models.ArchivedJob).filter_by( id=job_id ).first()
             
             if job:
                 response['job_id'] = job_id
@@ -138,13 +162,12 @@ class JobsHandler(BaseHandler):
                     'callback': job.callback,
                     'time_created': job.time_created.isoformat(),
                     'time_completed': job.time_completed.isoformat() if job.time_completed else None
-                }
-                
-                self.set_header('Content-Type', 'application/json') 
+                } 
                 self.set_status(200)
                 self.write( json.dumps(response) )
             else:
                 self.set_status(404)
+
         else:
             self.set_status(404)
          
@@ -160,34 +183,29 @@ class JobsHandler(BaseHandler):
         self.json_args['trigger']['date']['time'] = convert_isodate_to_dateobj(self.json_args['trigger']['date']['time'])
         
         # Create the job
-        Session = sessionmaker(bind=engine)
-        job_id = create_http_date_job( self.json_args, session=Session() )
+        job_id = create_http_date_job( self.json_args, scheduler=self.schdlr, session=self.db )
         if job_id:
             response['reason'] = 'Job created'
             response['job_id'] = job_id
-            self.set_header('Content-Type', 'application/json')
             self.set_status(201)
             self.write( json.dumps(response) )
         else:
             self.set_status(400)
 
-# Define the routes
-routes = [
-    tornado.web.url(r'/jobs', JobsHandler, name='jobs'),
-]
 
-# Define the application
-application = tornado.web.Application(routes, debug=True)
+def main():
+    """
+    """
+    tornado.options.parse_command_line()
+    http_server = tornado.httpserver.HTTPServer( Application() )
+    http_server.listen(tornado.options.options.port)
+    tornado.ioloop.IOLoop.instance().start()
 
 if __name__ == '__main__':
-    print('Press Ctrl+{0} to exit'.format('Break' if os.name == 'nt' else 'C'))
+    print '[%s]: Serving on port %s' % ( str(datetime.now()), str(tornado.options.options.port) )
+    
     try:
-        # Start the scheduler
-        scheduler.start()
-        
-        # Start the application
-        application.listen(PORT)
-        tornado.ioloop.IOLoop.instance().start()
+        main()
     except( KeyboardInterrupt, SystemExit ):
-        print("Shutting Down")
+        print '[%s]: Stopping tornado' % str(datetime.now())
         pass
