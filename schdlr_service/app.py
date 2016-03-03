@@ -101,7 +101,6 @@ def create_http_date_job(request, scheduler=None, session=None):
         # Save the job in the db archives
         archived_job = models.ArchivedJob(id=job_id,
                                           status=False,
-                                          response='',
                                           action='http_' + request['action'].get('kind').lower(),
                                           trigger='date',
                                           callback=request['action'].get('callback', None),
@@ -156,7 +155,6 @@ class JobsHandler(BaseHandler):
                 response['job_id'] = job_id
                 response['job'] = {
                     'status': job.status,
-                    'response': job.response,
                     'action': job.action,
                     'trigger': job.trigger,
                     'callback': job.callback,

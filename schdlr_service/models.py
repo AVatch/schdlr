@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Boolean, String, DateTime
+from sqlalchemy import Column, Boolean, Integer, String, DateTime
 from sqlalchemy.ext.declarative import declarative_base
 
 Base = declarative_base()
@@ -11,8 +11,8 @@ class ArchivedJob(Base):
 
      id = Column(String, primary_key=True)
      status = Column(Boolean)
+     status_code = Column(Integer)
      
-     response = Column(String)
      action = Column(String)
      trigger = Column(String)
      
