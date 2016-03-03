@@ -17,7 +17,7 @@ import apscheduler.schedulers.tornado
 from apscheduler.jobstores.sqlalchemy import SQLAlchemyJobStore
 from apscheduler.executors.pool import ThreadPoolExecutor, ProcessPoolExecutor
 
-from db import Session
+from db import get_session
 from models import ArchivedJob, init_db
 from jobs import job_get, job_post
 from serializers import validator_action_trigger, validator_action, validator_trigger 
@@ -110,6 +110,7 @@ class JobsHandler(BaseHandler):
         job_id = self.get_argument("id", default=None)
         
         if job_id:
+            Session = get_session()
             session = Session()
             job = session.query(ArchivedJob).filter_by( id=job_id ).first()
             
@@ -145,10 +146,12 @@ class JobsHandler(BaseHandler):
         self.json_args['trigger']['date']['time'] = convert_isodate_to_dateobj(self.json_args['trigger']['date']['time'])
         
         # Create the job
+        Session = get_session()
         job_id = create_http_date_job( self.json_args, session=Session() )
         if job_id:
             response['reason'] = 'Job created'
             response['job_id'] = job_id
+            self.set_header('Content-Type', 'application/json')
             self.set_status(201)
             self.write( json.dumps(response) )
         else:
